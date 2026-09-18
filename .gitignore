@@ -1,0 +1,19 @@
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ADK local session & artifact storage
+.adk/
+*/.adk/
+
+# Environment variables & secrets
+.env
+*/.env
+*.json
+!requirements.txt

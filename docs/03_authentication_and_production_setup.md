@@ -85,10 +85,10 @@ In a real enterprise deployment (like **Gemini Enterprise**), your system manage
 Because `mock_data_dtdb_v2.csv` is a local CSV file on disk, it does not have a built-in Google Drive permissions server. We use the `USER_PERMISSIONS` dictionary in [`enterprise_data_agent/agent.py`](../enterprise_data_agent/agent.py) to **simulate** Drive-level file access (`allowed_files`) and row-level security (`row_filter`) locally.
 
 ### What Replaces `USER_PERMISSIONS` in Production?
-In production, **you delete `USER_PERMISSIONS` completely**:
+In production (see **[`google_drive_oauth_agent/agent.py`](../google_drive_oauth_agent/agent.py)**), **you delete `USER_PERMISSIONS` completely**:
 1. **For Google Drive Files (`core/python/oauth-user-consent-flow`)**:
    * The user signs in via Google OAuth 2.0.
-   * Your `list_files` tool passes the user's OAuth token to the **Google Drive API** (`drive.files().list()`).
+   * Your `list_drive_files` tool passes the user's OAuth token to the **Google Drive API** (`drive.files().list()`).
    * Google Drive natively filters and returns *only* the files shared with that user's Google account.
 2. **For Enterprise Tables (BigQuery Row-Level Security)**:
    * You define a BigQuery Row Access Policy directly on the table:
@@ -99,3 +99,33 @@ In production, **you delete `USER_PERMISSIONS` completely**:
      FILTER USING (Account_Manager_Email = SESSION_USER());
      ```
    * When your ADK tool runs a BigQuery query using the signed-in user's credentials, BigQuery automatically enforces row-level security at the storage layer!
+
+---
+
+## 6. How Real Agents Added to Gemini Enterprise Handle OAuth (`temp:<AUTH_ID>` & `negotiate_creds`)
+
+In **`google/adk-samples/core/python/oauth-user-consent-flow`** (implemented in our **[`google_drive_oauth_agent/`](../google_drive_oauth_agent/agent.py)**), one single credential helper (`negotiate_creds(tool_context)`) makes the **exact same Python file** work in both **Production Gemini Enterprise** and **Local `adk web`**:
+
+```text
+  ┌─────────────────────────────────┬────────────────────────────────────┐
+  │   LOCAL DEV (`adk web`)         │   PRODUCTION (Gemini Enterprise)   │
+  ├─────────────────────────────────┼────────────────────────────────────┤
+  │ 1. User asks to read Drive file │ 1. User asks to read Drive file    │
+  │ 2. Stage 3: `request_credential`│ 2. Gemini Enterprise checks linked │
+  │    pops up "Sign in with Google"│    `authorizationConfig` (`AUTH_ID`│
+  │    button in `adk web` UI       │    = `"google-drive-auth"`)        │
+  │ 3. User approves `drive.readonly`│ 3. Gemini Enterprise injects live  │
+  │ 4. Stage 2: `get_auth_response` │    OAuth token directly into:      │
+  │    caches token in `state`      │    `state["temp:google-drive-auth"]`│
+  │ 5. Stage 1 used on next turn    │ 4. Stage 1 finds token immediately!│
+  └─────────────────────────────────┴────────────────────────────────────┘
+```
+
+### The 3 Stages of `negotiate_creds(tool_context)`:
+1. **Stage 1 (Production Gemini Enterprise & Cached State)**:
+   * Checks `tool_context.state.get("temp:google-drive-auth")` (where Gemini Enterprise automatically injects the employee's live Google OAuth Access Token) or `tool_context.state.get("google-drive-auth")`.
+2. **Stage 2 (Local `adk web` OAuth Callback)**:
+   * Checks `tool_context.get_auth_response(auth_config)` after a user clicks the consent screen in `adk web`, and caches the resulting token in `tool_context.state`.
+3. **Stage 3 (Local `adk web` Consent Trigger / ADC Fallback)**:
+   * Calls `tool_context.request_credential(auth_config)` to render the interactive **"Sign in with Google"** button inside the `adk web` chat (or falls back to `gcloud auth application-default login` with the `drive.readonly` scope for instant local testing).
+

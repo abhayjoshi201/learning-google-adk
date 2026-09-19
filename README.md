@@ -27,6 +27,17 @@ All lessons, mental models, and architectural notes from building this project a
 
 ---
 
+## 🤖 Runnable Agents Included in This Repository
+
+When you launch `adk web`, you can choose between **two versions** of the agent from the top-left dropdown:
+
+| Agent Package | Purpose | How Permissions Work |
+| :--- | :--- | :--- |
+| **1. [`enterprise_data_agent/`](./enterprise_data_agent/agent.py)** | **Local Mock Mode** (Instant offline/local testing) | Simulates Drive file ACLs & Row-Level Security (`Account_Manager = 'Craig Cohen'`) over local [`mock_data_dtdb_v2.csv`](./mock_data_dtdb_v2.csv) using `tool_context.state["user_email"]`. |
+| **2. [`google_drive_oauth_agent/`](./google_drive_oauth_agent/agent.py)** | **Real Google Drive + Gemini Enterprise Mode** (`oauth-user-consent-flow`) | **Zero hardcoded permissions!** Connects to the real **Google Drive v3 API** using the 3-stage `negotiate_creds(tool_context)` pattern (`temp:google-drive-auth` in Gemini Enterprise, interactive OAuth button in `adk web`, or `gcloud` ADC Drive scope) and runs **DuckDB SQL** directly over your Drive CSVs & Google Sheets! |
+
+---
+
 ## 🏗️ Architecture & 5-Step Design Blueprint
 
 ```mermaid

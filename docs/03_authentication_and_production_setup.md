@@ -126,6 +126,22 @@ In **`google/adk-samples/core/python/oauth-user-consent-flow`** (implemented in 
    * Checks `tool_context.state.get("temp:google-drive-auth")` (where Gemini Enterprise automatically injects the employee's live Google OAuth Access Token) or `tool_context.state.get("google-drive-auth")`.
 2. **Stage 2 (Local `adk web` OAuth Callback)**:
    * Checks `tool_context.get_auth_response(auth_config)` after a user clicks the consent screen in `adk web`, and caches the resulting token in `tool_context.state`.
-3. **Stage 3 (Local `adk web` Consent Trigger / ADC Fallback)**:
-   * Calls `tool_context.request_credential(auth_config)` to render the interactive **"Sign in with Google"** button inside the `adk web` chat (or falls back to `gcloud auth application-default login` with the `drive.readonly` scope for instant local testing).
+3. **Stage 3 (Local `adk web` Consent Trigger)**:
+   * Calls `tool_context.request_credential(auth_config)` to render the interactive **"Sign in with Google"** button inside the `adk web` chat.
+
+---
+
+## 7. GCP OAuth 2.0 Web Client Setup & Redirect URI Checklist
+
+When configuring your OAuth 2.0 Client ID (**Web application**) in Google Cloud Console (`APIs & Services -> Credentials`):
+
+1. **Authorized Redirect URIs (Trailing Slash Required!)**:
+   `adk web` sends `redirect_uri=http://127.0.0.1:8000/dev-ui/` **with a trailing slash**. Register all four local variants to avoid `Error 400: redirect_uri_mismatch`:
+   * `http://127.0.0.1:8000/dev-ui/`
+   * `http://127.0.0.1:8000/dev-ui`
+   * `http://localhost:8000/dev-ui/`
+   * `http://localhost:8000/dev-ui`
+2. **Pre-load `.env` in `auths.py`**:
+   Because `auths.py` reads `os.environ.get("OAUTH_CLIENT_ID")` and `os.environ.get("OAUTH_CLIENT_SECRET")` at module import time when building `AUTH_CREDENTIAL`, call `load_dotenv(Path(__file__).resolve().parent / ".env")` at the top of `auths.py`.
+
 

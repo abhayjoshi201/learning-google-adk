@@ -26,6 +26,10 @@ but TOKEN_CACHE_KEY and SCOPES are still referenced by negotiate_creds().
 """
 
 import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 from fastapi.openapi.models import (
     OAuth2,

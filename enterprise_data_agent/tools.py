@@ -262,7 +262,9 @@ def query_drive_csv(file_id: str, sql_query: str, tool_context: ToolContext) -> 
             "status": "success",
             "file_name": file_res["file_name"],
             "row_count": len(result_df),
-            "data": result_df.head(50).to_dict(orient="records"),
+            "data": json.loads(
+                result_df.head(50).to_json(orient="records", date_format="iso")
+            ),
         }
     except Exception as e:
         return {

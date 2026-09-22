@@ -53,9 +53,45 @@ This document captures the **10 critical architectural and operational lessons**
 
   ![Authorized Redirect URIs in GCP Console](assets/oauth_redirect_uris.png)
 
-### 5. Separate Workstation CLI Auth (`gcloud`) from Application Default Credentials (`ADC`)
-* **What We Saw**: Your workstation's `gcloud` CLI was logged into `abhayjoshi@google.com`, while your GCP project (`rdang-test-464810`) belonged to `abhay@rishabhdang.altostrat.com` in ADC (`~/.config/gcloud/application_default_credentials.json`).
-* **The Takeaway**: Python SDKs (`vertexai`, `google-auth`, `google-adk`) always use **ADC** (`gcloud auth application-default login`), whereas `gcloud` shell commands use `gcloud auth login`.
+### 5. Deep Dive: Workstation CLI Auth (`gcloud auth login`) vs. Application Default Credentials (`ADC`)
+* **What We Saw on This Workstation**:
+  * Running `gcloud projects describe rdang-test-464810` in the terminal **failed** because `gcloud` was logged in as `abhayjoshi@google.com`.
+  * Running `.venv/bin/python -m scripts.deploy_agent_engine` and `adk web` **succeeded** because Python's `google.auth.default()` read `~/.config/gcloud/application_default_credentials.json`, which was logged in as `abhay@rishabhdang.altostrat.com` (`rdang-test-464810`).
+
+* **How the Backend Stores & Handles Both Tracks**:
+  ```text
+  ┌───────────────────────────────────────────────────────────────────────────────────┐
+  │               YOUR LINUX WORKSTATION (~/.config/gcloud/)                          │
+  ├─────────────────────────────────────────┬─────────────────────────────────────────┤
+  │ TRACK 1: CLI Auth                       │ TRACK 2: Application Default Creds (ADC)│
+  │ Command: `gcloud auth login`            │ Command: `gcloud auth application-      │
+  │                                         │           default login`                │
+  ├─────────────────────────────────────────┼─────────────────────────────────────────┤
+  │ File on Disk:                           │ File on Disk:                           │
+  │ ~/.config/gcloud/credentials.db (SQLite)│ ~/.config/gcloud/                       │
+  │ ~/.config/gcloud/configurations/...     │   application_default_credentials.json  │
+  ├─────────────────────────────────────────┼─────────────────────────────────────────┤
+  │ Active Identity on Your Machine:        │ Active Identity on Your Machine:        │
+  │ 👤 abhayjoshi@google.com                │ 👤 abhay@rishabhdang.altostrat.com      │
+  ├─────────────────────────────────────────┼─────────────────────────────────────────┤
+  │ Who Reads This File?                    │ Who Reads This File?                    │
+  │ ONLY CLI binaries:                      │ ALL Code & SDK Libraries:               │
+  │ • `gcloud ...`                          │ • `google-adk` (`adk web`)              │
+  │ • `bq ...`                              │ • `vertexai` (`client.agent_engines`)   │
+  │ • `gsutil ...`                          │ • `google-genai` (Gemini 3.7 Flash)     │
+  │ • `gcloud auth print-access-token`      │ • `google.auth.default()` in Python     │
+  │                                         │ • `gcloud auth application-default      │
+  │                                         │    print-access-token`                  │
+  └─────────────────────────────────────────┴─────────────────────────────────────────┘
+  ```
+
+* **What Happens in the Backend When Your Python Code Runs (`google.auth.default()`)**:
+  1. **No Hardcoded Keys Needed**: When `adk web` or `deploy_agent_engine.py` starts, `vertexai` calls `google.auth.default()`.
+  2. **The ADC Lookup Chain**: `google.auth.default()` searches for credentials in this exact order:
+     * **Step A**: Is the `GOOGLE_APPLICATION_CREDENTIALS` env var pointing to a JSON file?
+     * **Step B**: Does `~/.config/gcloud/application_default_credentials.json` exist on disk? *(Found on your laptop -> `abhay@rishabhdang.altostrat.com`!)*
+     * **Step C**: Am I running inside GCP (Vertex AI Agent Engine, Cloud Run, GKE)? If so, query the internal GCP Metadata Server (`http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token`).
+  3. **Token Refresh Handshake**: `~/.config/gcloud/application_default_credentials.json` does **not** store an access token—it stores a long-lived `refresh_token`. In the background, Python sends a `POST https://oauth2.googleapis.com/token` with that `refresh_token` and receives a short-lived (1-hour) `ya29...` Bearer access token, which it attaches as `Authorization: Bearer ya29...` to every Vertex AI (`gemini-3.7-flash`) and Discovery Engine API call.
 
 ---
 

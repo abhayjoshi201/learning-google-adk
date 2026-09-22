@@ -1,0 +1,5 @@
+google-adk[a2a]==2.9.1
+google-cloud-aiplatform[agent_engines]>=1.80.0
+google-api-python-client>=2.160.0
+google-auth>=2.38.0
+python-dotenv>=1.0.1

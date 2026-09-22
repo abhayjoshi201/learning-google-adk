@@ -38,7 +38,7 @@ def generate_class_methods_from_agent(agent_instance: Any) -> list[dict[str, Any
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
     project = os.environ.get("GOOGLE_CLOUD_PROJECT", "rdang-test-464810")
-    location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+    location = "us-central1"
     display_name = "Enterprise Drive Data Agent"
     description = (
         "Enterprise Google Drive OAuth 2.0 + DuckDB SQL Data Agent built with ADK"

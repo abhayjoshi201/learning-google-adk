@@ -43,12 +43,15 @@ This document captures the **10 critical architectural and operational lessons**
   ```
 * **Key Contract**: The `AUTH_ID` (`"google-drive-auth"`) in [`auths.py`](../enterprise_data_agent/auths.py#L60) **must match** the `authorizationId` registered in Gemini Enterprise so Stage 1 finds `tool_context.state["temp:google-drive-auth"]`.
 
-### 4. OAuth 2.0 Redirect URIs Are Character-by-Character Strict (Trailing Slash Matters!)
+### 4. OAuth 2.0 Redirect URIs Are Character-by-Character Strict (All 4 URIs Required!)
 * **The Bug We Hit**: `Error 400: redirect_uri_mismatch` on both local and prod until the exact URIs were added.
-* **The Rule**:
-  * Local `adk web` sends `http://127.0.0.1:8000/dev-ui/` (**with a trailing slash**—registering `/dev-ui` without `/` will fail!).
-  * Production Gemini Enterprise sends `https://vertexaisearch.cloud.google.com/static/oauth/oauth.html`.
-  * Register **both** on the same Web OAuth Client ID so one credential works everywhere.
+* **The Exact 4 Redirect URIs Configured in GCP Console**:
+  1. `http://127.0.0.1:8000/dev-ui/` — Local `adk web` via `127.0.0.1` (**with trailing slash**)
+  2. `http://localhost:8000/dev-ui/` — Local `adk web` via `localhost` (**with trailing slash**)
+  3. `https://vertexaisearch.cloud.google.com/static/oauth/oauth.html` — Production Gemini Enterprise static OAuth callback page
+  4. `https://vertexaisearch.cloud.google.com/oauth-redirect` — Production Gemini Enterprise / Vertex AI Search OAuth redirect endpoint
+
+  ![Authorized Redirect URIs in GCP Console](assets/oauth_redirect_uris.png)
 
 ### 5. Separate Workstation CLI Auth (`gcloud`) from Application Default Credentials (`ADC`)
 * **What We Saw**: Your workstation's `gcloud` CLI was logged into `abhayjoshi@google.com`, while your GCP project (`rdang-test-464810`) belonged to `abhay@rishabhdang.altostrat.com` in ADC (`~/.config/gcloud/application_default_credentials.json`).

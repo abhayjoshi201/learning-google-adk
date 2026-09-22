@@ -30,16 +30,23 @@ This guide walks through the **exact 5-step manual process** to deploy an ADK + 
 
 1. Open **[Google Cloud Console -> APIs & Services -> Credentials](https://console.cloud.google.com/apis/credentials)**.
 2. Click **+ Create Credentials -> OAuth client ID** (Application type: **Web application**).
-3. Under **Authorized redirect URIs**, add **both** local and Gemini Enterprise redirect URIs:
-   ```text
-   http://127.0.0.1:8000/dev-ui/
-   https://vertexaisearch.cloud.google.com/static/oauth/oauth.html
-   ```
+3. Under **Authorized redirect URIs**, add all **4 exact redirect URIs** (2 for local `adk web` development and 2 for Gemini Enterprise / Vertex AI Search):
+
+   | URI # | Authorized Redirect URI | Environment / Purpose |
+   | :--- | :--- | :--- |
+   | **URIs 1 \*** | `http://127.0.0.1:8000/dev-ui/` | Local `adk web` accessed via `127.0.0.1` (**trailing `/` required**) |
+   | **URIs 2 \*** | `http://localhost:8000/dev-ui/` | Local `adk web` accessed via `localhost` (**trailing `/` required**) |
+   | **URIs 3 \*** | `https://vertexaisearch.cloud.google.com/static/oauth/oauth.html` | Gemini Enterprise static OAuth callback handler |
+   | **URIs 4 \*** | `https://vertexaisearch.cloud.google.com/oauth-redirect` | Gemini Enterprise / Vertex AI Search server-side OAuth redirect endpoint |
+
+   ![Authorized Redirect URIs in GCP Console](assets/oauth_redirect_uris.png)
+
 4. Click **Save** and copy your **Client ID** and **Client Secret** into [`enterprise_data_agent/.env`](../enterprise_data_agent/.env.example):
    ```env
    GOOGLE_GENAI_USE_VERTEXAI=1
    GOOGLE_CLOUD_PROJECT=rdang-test-464810
-   GOOGLE_CLOUD_LOCATION=us-central1
+   GOOGLE_CLOUD_LOCATION=global
+   MODEL_NAME=gemini-3.7-flash
    OAUTH_CLIENT_ID=YOUR_CLIENT_ID.apps.googleusercontent.com
    OAUTH_CLIENT_SECRET=GOCSPX-YOUR_CLIENT_SECRET
    AUTH_ID=google-drive-auth

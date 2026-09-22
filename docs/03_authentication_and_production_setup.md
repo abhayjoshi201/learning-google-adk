@@ -135,13 +135,17 @@ In **`google/adk-samples/core/python/oauth-user-consent-flow`** (implemented in 
 
 When configuring your OAuth 2.0 Client ID (**Web application**) in Google Cloud Console (`APIs & Services -> Credentials`):
 
-1. **Authorized Redirect URIs (Trailing Slash Required!)**:
-   `adk web` sends `redirect_uri=http://127.0.0.1:8000/dev-ui/` **with a trailing slash**. Register all four local variants to avoid `Error 400: redirect_uri_mismatch`:
-   * `http://127.0.0.1:8000/dev-ui/`
-   * `http://127.0.0.1:8000/dev-ui`
-   * `http://localhost:8000/dev-ui/`
-   * `http://localhost:8000/dev-ui`
+1. **Authorized Redirect URIs (All 4 Local + Production URIs)**:
+   Register all **4 exact redirect URIs** on the same Web OAuth Client ID so one credential seamlessly supports both local `adk web` (`127.0.0.1` and `localhost` with trailing `/`) and production Gemini Enterprise (`vertexaisearch.cloud.google.com`):
+   * **URIs 1 \***: `http://127.0.0.1:8000/dev-ui/`
+   * **URIs 2 \***: `http://localhost:8000/dev-ui/`
+   * **URIs 3 \***: `https://vertexaisearch.cloud.google.com/static/oauth/oauth.html`
+   * **URIs 4 \***: `https://vertexaisearch.cloud.google.com/oauth-redirect`
+
+   ![Authorized Redirect URIs in GCP Console](assets/oauth_redirect_uris.png)
+
 2. **Pre-load `.env` in `auths.py`**:
    Because `auths.py` reads `os.environ.get("OAUTH_CLIENT_ID")` and `os.environ.get("OAUTH_CLIENT_SECRET")` at module import time when building `AUTH_CREDENTIAL`, call `load_dotenv(Path(__file__).resolve().parent / ".env")` at the top of `auths.py`.
+
 
 

@@ -25,14 +25,14 @@ from .tools import read_drive_file
 
 _, project_id = google.auth.default()
 os.environ.setdefault("GOOGLE_CLOUD_PROJECT", project_id or "rdang-test-464810")
-os.environ.setdefault("GOOGLE_CLOUD_LOCATION", "global")
+os.environ["GOOGLE_CLOUD_LOCATION"] = "global"
 os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "True")
 
 
 root_agent = Agent(
     name="root_agent",
     model=Gemini(
-        model=os.getenv("MODEL_NAME", "gemini-2.5-flash"),
+        model=os.getenv("MODEL_NAME", "gemini-3.7-flash"),
         retry_options=types.HttpRetryOptions(attempts=3),
     ),
     instruction="""You are a helpful AI assistant that can read files from Google Drive.

@@ -57,7 +57,8 @@ def main() -> None:
 
     env_vars = {
         "GOOGLE_CLOUD_REGION": location,
-        "GOOGLE_CLOUD_LOCATION": location,
+        "GOOGLE_CLOUD_LOCATION": "global",
+        "MODEL_NAME": "gemini-3.7-flash",
         "GOOGLE_GENAI_USE_VERTEXAI": "1",
         "NUM_WORKERS": "1",
     }
@@ -78,7 +79,9 @@ def main() -> None:
         agent_framework="google-adk",
     )
 
-    remote_agent = client.agent_engines.create(config=config)
+    existing_id = "projects/624784087790/locations/us-central1/reasoningEngines/448499039307038720"
+    print(f"Updating existing Reasoning Engine in place: {existing_id}...")
+    remote_agent = client.agent_engines.update(name=existing_id, config=config)
     resource_name = remote_agent.api_resource.name
     print(f"\n✅ Deployment successful! Reasoning Engine:\n{resource_name}")
 

@@ -37,11 +37,10 @@ class AgentEngineApp(AdkApp):
         vertexai.init()
         super().set_up()
         logging.basicConfig(level=logging.INFO)
-        if gemini_location:
-            os.environ["GOOGLE_CLOUD_LOCATION"] = gemini_location
+        os.environ["GOOGLE_CLOUD_LOCATION"] = "global"
 
 
-gemini_location = os.environ.get("GOOGLE_CLOUD_LOCATION")
+gemini_location = "global"
 agent_engine = AgentEngineApp(
     app=adk_app,
     artifact_service_builder=InMemoryArtifactService,
